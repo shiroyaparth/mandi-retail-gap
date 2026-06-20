@@ -1,0 +1,27 @@
+name: Daily Wholesale Price Ingestion
+
+on:
+  schedule:
+    - cron: '30 0 * * *'  # 00:30 UTC = 6:00 AM IST
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ingestion script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATA_GOV_API_KEY: ${{ secrets.DATA_GOV_API_KEY }}
+        run: python pipeline/load_wholesale_data.py
