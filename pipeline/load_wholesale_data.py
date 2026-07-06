@@ -77,6 +77,17 @@ def main():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
 
+    # Clear provisional flag for records older than 3 days
+    cur.execute("""
+        UPDATE wholesale_price
+        SET is_provisional = false
+        WHERE is_provisional = true
+        AND price_date < CURRENT_DATE - INTERVAL '3 days'
+    """)
+    updated_rows = cur.rowcount
+    conn.commit()
+    print(f"Provisional flag cleared for {updated_rows} records older than 3 days.")
+
     total_records_processed = 0
     total_inserted_updated = 0
     total_skipped = 0
