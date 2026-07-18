@@ -38,7 +38,7 @@ def fetch_all_records(crop):
             'filters[state.keyword]': 'Gujarat',
             'filters[commodity.keyword]': crop
         }
-        response = requests.get(API_URL, params=params, headers=HEADERS)
+        response = requests.get(API_URL, params=params, headers=HEADERS, timeout=30)
         if response.status_code != 200:
             print(f"Error fetching {crop} at offset {offset}: {response.status_code}")
             break
