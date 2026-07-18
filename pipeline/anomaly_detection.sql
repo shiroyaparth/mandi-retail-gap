@@ -24,7 +24,12 @@ WITH wholesale_stats AS (
             PARTITION BY w.crop_id, w.mandi_id
             ORDER BY w.price_date
             ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
-        ) AS wholesale_stddev
+        ) AS wholesale_stddev,
+        COUNT(*) OVER (
+            PARTITION BY w.crop_id, w.mandi_id
+            ORDER BY w.price_date
+            ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
+        ) AS preceding_count
     FROM wholesale_price w
     JOIN mandi_master m ON w.mandi_id = m.mandi_id
     WHERE w.is_provisional = false
@@ -33,6 +38,7 @@ wholesale_scored AS (
     SELECT *,
         CASE
             WHEN wholesale_stddev IS NULL OR wholesale_stddev = 0 THEN NULL
+            WHEN preceding_count < 7 THEN NULL
             ELSE ROUND(((wholesale_price - wholesale_baseline) / wholesale_stddev)::numeric, 2)
         END AS wholesale_zscore
     FROM wholesale_stats
@@ -53,7 +59,12 @@ retail_stats AS (
             PARTITION BY crop_id, city
             ORDER BY price_date
             ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
-        ) AS retail_stddev
+        ) AS retail_stddev,
+        COUNT(*) OVER (
+            PARTITION BY crop_id, city
+            ORDER BY price_date
+            ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
+        ) AS preceding_count
     FROM retail_price
     WHERE data_type = 'scraped'
 ),
@@ -61,6 +72,7 @@ retail_scored AS (
     SELECT *,
         CASE
             WHEN retail_stddev IS NULL OR retail_stddev = 0 THEN NULL
+            WHEN preceding_count < 7 THEN NULL
             ELSE ROUND(((retail_price - retail_baseline) / retail_stddev)::numeric, 2)
         END AS retail_zscore
     FROM retail_stats

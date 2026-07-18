@@ -133,7 +133,15 @@ def main():
                 continue
 
             is_provisional = False
-            if modal_price_per_kg < 1 or modal_price_per_kg > 500:
+            CROP_PRICE_BOUNDS = {
+                'Onion':        (2, 100),
+                'Potato':       (3, 80),
+                'Tomato':       (5, 150),
+                'Garlic':       (20, 500),
+                'Green Chilli': (10, 300),
+            }
+            lower, upper = CROP_PRICE_BOUNDS.get(commodity, (1, 500))
+            if modal_price_per_kg < lower or modal_price_per_kg > upper:
                 print(f"Suspicious price for {commodity} at {mandi_name}: {modal_price_per_kg}")
                 is_provisional = True
                 total_flagged_provisional += 1
