@@ -25,3 +25,14 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATA_GOV_API_KEY: ${{ secrets.DATA_GOV_API_KEY }}
         run: python pipeline/load_wholesale_data.py
+        
+      - name: Load retail manual entries
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RETAIL_SHEET_URL: ${{ secrets.RETAIL_SHEET_URL }}
+        run: python ingestion/load_retail_manual.py
+
+      - name: Generate retail model
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python ingestion/generate_retail_model.py
