@@ -2,6 +2,7 @@ name: Daily Wholesale Price Ingestion
 
 on:
   schedule:
+    - cron: "30 3 * * *" # 03:30 UTC = 9:00 AM IST
     - cron: "0 9 * * *" # 09:00 UTC = 2:30 PM IST
   workflow_dispatch:
 
