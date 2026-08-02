@@ -50,14 +50,14 @@ def main():
         crop_id = result[0]
 
         try:
-            price_date = datetime.strptime(row['entry_date'].strip(), '%Y-%m-%d').date()
+            price_date = datetime.strptime(row['entry_date'].strip(), '%d-%m-%Y').date()
         except ValueError:
-            print(f"Bad date format: {row['entry_date']} — skipping. Use YYYY-MM-DD.")
+            print(f"Bad date format: {row['entry_date']} — skipping. Use DD-MM-YYYY.")
             total_skipped += 1
             continue
 
         try:
-            price = float(row['price_per_kg'].strip())
+            price = float(row['price'].strip())
         except ValueError:
             print(f"Bad price for {crop_name} on {row['entry_date']} — skipping")
             total_skipped += 1
@@ -71,7 +71,7 @@ def main():
         city = row['city'].strip()
         platform = row['platform'].strip()
         unit = row['unit'].strip()
-        confidence_note = row['notes'].strip() or None
+        confidence_note = None
 
         cur.execute(
             """
