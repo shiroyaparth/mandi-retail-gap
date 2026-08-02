@@ -57,7 +57,7 @@ def main():
             continue
 
         try:
-            price = float(row['price'].strip())
+            price = float(row['price_per_kg'].strip())
         except ValueError:
             print(f"Bad price for {crop_name} on {row['entry_date']} — skipping")
             total_skipped += 1
