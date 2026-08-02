@@ -50,9 +50,9 @@ def main():
         crop_id = result[0]
 
         try:
-            price_date = datetime.strptime(row['entry_date'].strip(), '%d-%m-%Y').date()
+            price_date = datetime.strptime(row['entry_date'].strip(), '%Y-%m-%d').date()
         except ValueError:
-            print(f"Bad date format: {row['entry_date']} — skipping. Use DD-MM-YYYY.")
+            print(f"Bad date format: {row['entry_date']} — skipping. Use YYYY-MM-DD.")
             total_skipped += 1
             continue
 
