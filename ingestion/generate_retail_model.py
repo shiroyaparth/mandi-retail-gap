@@ -45,10 +45,10 @@ def main():
             modeled_price = round(float(ahmedabad_price) * factor, 2)
 
             cur.execute("""
-                INSERT INTO retail_price
-                    (crop_id, city, platform, price_date, price, unit, data_type, confidence_note)
-                VALUES (%s, %s, 'modeled', %s, %s, 'kg', 'modeled', %s)
-                ON CONFLICT (crop_id, city, platform, price_date) DO NOTHING
+            INSERT INTO retail_price
+            (crop_id, city, platform, price_date, price, unit, data_type, confidence_note)
+            VALUES (%s, %s, 'Blinkit', %s, %s, 'kg', 'modeled', %s)
+            ON CONFLICT (crop_id, city, platform, price_date) DO NOTHING
             """, (crop_id, city, price_date, modeled_price, CONFIDENCE_NOTE))
 
             if cur.rowcount:
