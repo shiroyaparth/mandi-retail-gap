@@ -1,0 +1,26 @@
+[
+  {
+    "state": "Gujarat",
+    "district": "Amreli",
+    "market": "Damnagar APMC",
+    "commodity": "Green Chilli",
+    "variety": "Green Chilly",
+    "grade": "Local",
+    "arrival_date": "26/07/2026",
+    "min_price": 5000,
+    "max_price": 5000,
+    "modal_price": 5000
+  },
+  {
+    "state": "Gujarat",
+    "district": "Rajkot",
+    "market": "Gondal(Veg.market Gondal) APMC",
+    "commodity": "Green Chilli",
+    "variety": "Green Chilly",
+    "grade": "Local",
+    "arrival_date": "26/07/2026",
+    "min_price": 1000,
+    "max_price": 8000,
+    "modal_price": 4500
+  }
+]

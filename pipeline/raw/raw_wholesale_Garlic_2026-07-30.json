@@ -1,0 +1,50 @@
+[
+  {
+    "state": "Gujarat",
+    "district": "Jamnagar",
+    "market": "Jamnagar APMC",
+    "commodity": "Garlic",
+    "variety": "Other",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 5750,
+    "max_price": 11025,
+    "modal_price": 8825
+  },
+  {
+    "state": "Gujarat",
+    "district": "Rajkot",
+    "market": "Rajkot APMC",
+    "commodity": "Garlic",
+    "variety": "Garlic",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 5850,
+    "max_price": 11125,
+    "modal_price": 7700
+  },
+  {
+    "state": "Gujarat",
+    "district": "Surendranagar",
+    "market": "Vadhvan APMC",
+    "commodity": "Garlic",
+    "variety": "Garlic",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 10000,
+    "max_price": 11000,
+    "modal_price": 10500
+  },
+  {
+    "state": "Gujarat",
+    "district": "Dahod",
+    "market": "Dahod(Veg. Market) APMC",
+    "commodity": "Garlic",
+    "variety": "Garlic",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 9000,
+    "max_price": 20000,
+    "modal_price": 18000
+  }
+]

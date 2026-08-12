@@ -1,0 +1,122 @@
+[
+  {
+    "state": "Gujarat",
+    "district": "Navsari",
+    "market": "Navsari APMC",
+    "commodity": "Tomato",
+    "variety": "Tomato",
+    "grade": "Grade A",
+    "arrival_date": "30/07/2026",
+    "min_price": 1000,
+    "max_price": 3500,
+    "modal_price": 2250
+  },
+  {
+    "state": "Gujarat",
+    "district": "Gandhinagar",
+    "market": "Kalol(Veg,Market,Kalol) APMC",
+    "commodity": "Tomato",
+    "variety": "Other",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 2000,
+    "max_price": 3500,
+    "modal_price": 2500
+  },
+  {
+    "state": "Gujarat",
+    "district": "Dahod",
+    "market": "Dahod(Veg. Market) APMC",
+    "commodity": "Tomato",
+    "variety": "Tomato",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 1000,
+    "max_price": 3000,
+    "modal_price": 2500
+  },
+  {
+    "state": "Gujarat",
+    "district": "Surendranagar",
+    "market": "Vadhvan APMC",
+    "commodity": "Tomato",
+    "variety": "Tomato",
+    "grade": "Medium",
+    "arrival_date": "30/07/2026",
+    "min_price": 2500,
+    "max_price": 3000,
+    "modal_price": 2750
+  },
+  {
+    "state": "Gujarat",
+    "district": "Amreli",
+    "market": "Damnagar APMC",
+    "commodity": "Tomato",
+    "variety": "Local",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 3000,
+    "max_price": 3000,
+    "modal_price": 3000
+  },
+  {
+    "state": "Gujarat",
+    "district": "Navsari",
+    "market": "Bilimora APMC",
+    "commodity": "Tomato",
+    "variety": "Other",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 2500,
+    "max_price": 3500,
+    "modal_price": 3000
+  },
+  {
+    "state": "Gujarat",
+    "district": "Rajkot",
+    "market": "Gondal(Veg.market Gondal) APMC",
+    "commodity": "Tomato",
+    "variety": "Tomato",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 1000,
+    "max_price": 3000,
+    "modal_price": 2000
+  },
+  {
+    "state": "Gujarat",
+    "district": "Rajkot",
+    "market": "Rajkot(Veg.Sub Yard) APMC",
+    "commodity": "Tomato",
+    "variety": "Tomato",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 1875,
+    "max_price": 2845,
+    "modal_price": 2360
+  },
+  {
+    "state": "Gujarat",
+    "district": "Surat",
+    "market": "Surat APMC",
+    "commodity": "Tomato",
+    "variety": "Other",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 700,
+    "max_price": 3500,
+    "modal_price": 2100
+  },
+  {
+    "state": "Gujarat",
+    "district": "Vadodara(Baroda)",
+    "market": "Padra APMC",
+    "commodity": "Tomato",
+    "variety": "Other",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 2500,
+    "max_price": 3000,
+    "modal_price": 2750
+  }
+]

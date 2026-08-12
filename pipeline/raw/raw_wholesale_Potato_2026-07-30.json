@@ -1,0 +1,110 @@
+[
+  {
+    "state": "Gujarat",
+    "district": "Dahod",
+    "market": "Dahod(Veg. Market) APMC",
+    "commodity": "Potato",
+    "variety": "Potato",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 800,
+    "max_price": 1100,
+    "modal_price": 1000
+  },
+  {
+    "state": "Gujarat",
+    "district": "Rajkot",
+    "market": "Gondal(Veg.market Gondal) APMC",
+    "commodity": "Potato",
+    "variety": "Potato",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 750,
+    "max_price": 1300,
+    "modal_price": 1025
+  },
+  {
+    "state": "Gujarat",
+    "district": "Bharuch",
+    "market": "Ankleshwar APMC",
+    "commodity": "Potato",
+    "variety": "Potato",
+    "grade": "Grade A",
+    "arrival_date": "30/07/2026",
+    "min_price": 800,
+    "max_price": 1500,
+    "modal_price": 1000
+  },
+  {
+    "state": "Gujarat",
+    "district": "Vadodara(Baroda)",
+    "market": "Padra APMC",
+    "commodity": "Potato",
+    "variety": "Other",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 1500,
+    "max_price": 2000,
+    "modal_price": 1750
+  },
+  {
+    "state": "Gujarat",
+    "district": "Rajkot",
+    "market": "Rajkot(Veg.Sub Yard) APMC",
+    "commodity": "Potato",
+    "variety": "Potato",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 460,
+    "max_price": 1605,
+    "modal_price": 1030
+  },
+  {
+    "state": "Gujarat",
+    "district": "Navsari",
+    "market": "Navsari APMC",
+    "commodity": "Potato",
+    "variety": "Potato",
+    "grade": "Grade A",
+    "arrival_date": "30/07/2026",
+    "min_price": 700,
+    "max_price": 1900,
+    "modal_price": 1300
+  },
+  {
+    "state": "Gujarat",
+    "district": "Surendranagar",
+    "market": "Vadhvan APMC",
+    "commodity": "Potato",
+    "variety": "Potato",
+    "grade": "Medium",
+    "arrival_date": "30/07/2026",
+    "min_price": 1500,
+    "max_price": 2000,
+    "modal_price": 1750
+  },
+  {
+    "state": "Gujarat",
+    "district": "Surat",
+    "market": "Surat APMC",
+    "commodity": "Potato",
+    "variety": "Other",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 500,
+    "max_price": 1650,
+    "modal_price": 1075
+  },
+  {
+    "state": "Gujarat",
+    "district": "Navsari",
+    "market": "Bilimora APMC",
+    "commodity": "Potato",
+    "variety": "Other",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 1500,
+    "max_price": 1900,
+    "modal_price": 1700
+  }
+]

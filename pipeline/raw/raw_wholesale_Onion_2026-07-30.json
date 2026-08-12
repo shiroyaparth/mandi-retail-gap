@@ -1,0 +1,98 @@
+[
+  {
+    "state": "Gujarat",
+    "district": "Vadodara(Baroda)",
+    "market": "Padra APMC",
+    "commodity": "Onion",
+    "variety": "Other",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 2000,
+    "max_price": 3000,
+    "modal_price": 2500
+  },
+  {
+    "state": "Gujarat",
+    "district": "Navsari",
+    "market": "Bilimora APMC",
+    "commodity": "Onion",
+    "variety": "Nasik",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 1500,
+    "max_price": 3000,
+    "modal_price": 2500
+  },
+  {
+    "state": "Gujarat",
+    "district": "Bharuch",
+    "market": "Ankleshwar APMC",
+    "commodity": "Onion",
+    "variety": "Onion",
+    "grade": "Grade A",
+    "arrival_date": "30/07/2026",
+    "min_price": 1000,
+    "max_price": 2500,
+    "modal_price": 1600
+  },
+  {
+    "state": "Gujarat",
+    "district": "Navsari",
+    "market": "Navsari APMC",
+    "commodity": "Onion",
+    "variety": "Onion",
+    "grade": "Grade A",
+    "arrival_date": "30/07/2026",
+    "min_price": 2400,
+    "max_price": 3200,
+    "modal_price": 2800
+  },
+  {
+    "state": "Gujarat",
+    "district": "Jamnagar",
+    "market": "Jamnagar APMC",
+    "commodity": "Onion",
+    "variety": "Other",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 625,
+    "max_price": 2300,
+    "modal_price": 1550
+  },
+  {
+    "state": "Gujarat",
+    "district": "Surat",
+    "market": "Surat APMC",
+    "commodity": "Onion",
+    "variety": "Other",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 800,
+    "max_price": 3200,
+    "modal_price": 2000
+  },
+  {
+    "state": "Gujarat",
+    "district": "Rajkot",
+    "market": "Rajkot(Veg.Sub Yard) APMC",
+    "commodity": "Onion",
+    "variety": "Onion",
+    "grade": "FAQ",
+    "arrival_date": "30/07/2026",
+    "min_price": 750,
+    "max_price": 2325,
+    "modal_price": 1605
+  },
+  {
+    "state": "Gujarat",
+    "district": "Dahod",
+    "market": "Dahod(Veg. Market) APMC",
+    "commodity": "Onion",
+    "variety": "Onion",
+    "grade": "Local",
+    "arrival_date": "30/07/2026",
+    "min_price": 2000,
+    "max_price": 3000,
+    "modal_price": 2800
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "state": "Gujarat",
+    "district": "Amreli",
+    "market": "Damnagar APMC",
+    "commodity": "Tomato",
+    "variety": "Local",
+    "grade": "Local",
+    "arrival_date": "26/07/2026",
+    "min_price": 3500,
+    "max_price": 3500,
+    "modal_price": 3500
+  },
+  {
+    "state": "Gujarat",
+    "district": "Rajkot",
+    "market": "Gondal(Veg.market Gondal) APMC",
+    "commodity": "Tomato",
+    "variety": "Tomato",
+    "grade": "Local",
+    "arrival_date": "26/07/2026",
+    "min_price": 1000,
+    "max_price": 3000,
+    "modal_price": 2000
+  }
+]
