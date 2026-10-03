@@ -5,13 +5,17 @@ from datetime import datetime
 from dotenv import load_dotenv
 import requests
 import psycopg2
+from requests.exceptions import RequestException
 
 load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')
-DATA_GOV_API_KEY = os.getenv('DATA_GOV_API_KEY').strip()
+DATA_GOV_API_KEY = (os.getenv('DATA_GOV_API_KEY') or '').strip()
 
 if not DATABASE_URL:
     print("DATABASE_URL not found — check .env file")
+    exit(1)
+if not DATA_GOV_API_KEY:
+    print("DATA_GOV_API_KEY not found — check .env file")
     exit(1)
 
 crop_names = ['Onion', 'Potato', 'Tomato', 'Garlic', 'Green Chilli']
@@ -28,6 +32,7 @@ def fetch_all_records(crop):
     all_records = []
     offset = 0
     total = None
+    saw_successful_response = False
 
     while True:
         params = {
@@ -38,12 +43,18 @@ def fetch_all_records(crop):
             'filters[state.keyword]': 'Gujarat',
             'filters[commodity.keyword]': crop
         }
-        response = requests.get(API_URL, params=params, headers=HEADERS, timeout=30)
+        try:
+            response = requests.get(API_URL, params=params, headers=HEADERS, timeout=30)
+        except RequestException as exc:
+            print(f"Network error fetching {crop} at offset {offset}: {exc}")
+            break
+
         if response.status_code != 200:
             print(f"Error fetching {crop} at offset {offset}: {response.status_code}")
             break
 
         data = response.json()
+        saw_successful_response = True
         records = data.get('records', [])
         if total is None:
             total = int(data.get('total', 0))
@@ -57,7 +68,7 @@ def fetch_all_records(crop):
         offset += PAGE_LIMIT
         time.sleep(0.5)
 
-    return all_records
+    return all_records, saw_successful_response
 
 def get_or_create_mandi(cur, mandi_name, district):
     cur.execute(
@@ -92,10 +103,12 @@ def main():
     total_inserted_updated = 0
     total_skipped = 0
     total_flagged_provisional = 0
+    any_api_success = False
     today = datetime.now().strftime('%Y-%m-%d')
 
     for crop in crop_names:
-        records = fetch_all_records(crop)
+        records, saw_successful_response = fetch_all_records(crop)
+        any_api_success = any_api_success or saw_successful_response
 
         with open(f'{raw_dir}/raw_wholesale_{crop.replace(" ", "_")}_{today}.json', 'w') as f:
             json.dump(records, f, indent=2)
@@ -168,11 +181,16 @@ def main():
         conn.commit()
         time.sleep(0.5)
 
-    if total_records_processed == 0:
+    if total_records_processed == 0 and any_api_success:
         print("ERROR: Zero records processed — pipeline likely broken or API returned nothing")
         cur.close()
         conn.close()
         exit(1)
+    if total_records_processed == 0:
+        print("WARNING: No wholesale records processed because all API requests failed. Keeping existing database data unchanged.")
+        cur.close()
+        conn.close()
+        return
 
     cur.close()
     conn.close()
