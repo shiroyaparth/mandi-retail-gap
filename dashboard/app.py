@@ -167,6 +167,43 @@ def load_geojson():
         return None
 
 
+def prepare_geojson_districts(geojson):
+    """Normalize GeoJSON district names so they match database district names."""
+    if not geojson:
+        return geojson
+
+    prepared = dict(geojson)
+    prepared["features"] = []
+
+    for feature in geojson.get("features", []):
+        updated_feature = dict(feature)
+        properties = dict(feature.get("properties", {}))
+
+        original_name = properties.get(GEOJSON_DISTRICT_KEY)
+        if original_name:
+            properties[GEOJSON_DISTRICT_KEY] = normalize_district(original_name)
+
+        updated_feature["properties"] = properties
+        prepared["features"].append(updated_feature)
+
+    return prepared
+
+
+def get_all_geojson_districts(geojson):
+    """Return every Gujarat district present in the GeoJSON boundaries."""
+    districts = []
+
+    for feature in geojson.get("features", []):
+        district = feature.get("properties", {}).get(GEOJSON_DISTRICT_KEY)
+
+        if district:
+            districts.append({
+                "district_norm": normalize_district(district)
+            })
+
+    return pd.DataFrame(districts).drop_duplicates()
+
+
 @st.cache_data(ttl=600, show_spinner=False)
 def get_overview_metrics(crops, start_date, end_date):
     records = run_query(
@@ -501,17 +538,63 @@ with tab_map:
     if geojson is None:
         st.warning("The Gujarat GeoJSON could not be loaded.")
     elif wedge.empty:
+        # Still render the complete Gujarat map even when the selected crop
+        # has no wedge records in the chosen date range.
+        geojson = prepare_geojson_districts(geojson)
+        map_df = get_all_geojson_districts(geojson)
+        map_df["avg_wedge_pct"] = None
+        map_df["records"] = 0
+
+        fig = px.choropleth(
+            map_df,
+            geojson=geojson,
+            locations="district_norm",
+            featureidkey=f"properties.{GEOJSON_DISTRICT_KEY}",
+            color="avg_wedge_pct",
+            labels={"avg_wedge_pct": "Average Wedge %"},
+            hover_data={"records": True, "avg_wedge_pct": ":.2f"},
+        )
+
+        fig.update_geos(
+            fitbounds="locations",
+            visible=False,
+            showcountries=False,
+            showcoastlines=False,
+            showland=False,
+        )
+        fig.update_layout(
+            height=600,
+            margin={"l": 0, "r": 0, "t": 0, "b": 0},
+        )
+        st.plotly_chart(fig, use_container_width=True)
         st.info("No district wedge data is available for the selected filters.")
     else:
+        # Normalize both database and GeoJSON district names.
+        # This prevents districts from disappearing because of spelling differences.
+        geojson = prepare_geojson_districts(geojson)
+
         wedge = wedge.copy()
         wedge["district_norm"] = wedge["district"].apply(normalize_district)
-        map_df = (
+
+        wedge_df = (
             wedge.groupby("district_norm", as_index=False)
             .agg(
                 avg_wedge_pct=("avg_wedge_pct", "mean"),
                 records=("records", "sum"),
             )
         )
+
+        # Start with ALL Gujarat districts from GeoJSON.
+        # Districts without data for the selected crop remain on the map.
+        all_districts = get_all_geojson_districts(geojson)
+
+        map_df = all_districts.merge(
+            wedge_df,
+            on="district_norm",
+            how="left",
+        )
+
+        map_df["records"] = map_df["records"].fillna(0)
 
         fig = px.choropleth(
             map_df,

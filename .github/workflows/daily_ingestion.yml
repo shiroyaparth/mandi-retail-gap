@@ -2,13 +2,24 @@ name: Daily Wholesale Price Ingestion
 
 on:
   schedule:
-    - cron: "30 3 * * *" # 03:30 UTC = 9:00 AM IST
-    - cron: "0 9 * * *" # 09:00 UTC = 2:30 PM IST
-  workflow_dispatch:
+    - cron: "30 3 * * *"   # 03:30 UTC = 09:00 IST
+    - cron: "0 9 * * *"    # 09:00 UTC = 14:30 IST
+  workflow_dispatch:        # Actions tab -> "Run workflow" for a manual run
+
+concurrency:
+  group: krishipulse-ingestion
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   ingest:
+    # NOTE: GitHub-hosted runners are outside India. api.data.gov.in has been reported to refuse
+    # non-Indian addresses (see README). If the wholesale step fails with "Connection refused",
+    # either switch the data source or use `runs-on: self-hosted` on a machine in India.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -17,28 +28,49 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run ingestion script
+      - name: Ingest wholesale prices
+        id: wholesale
+        continue-on-error: true      # let the other steps still run; the job is failed explicitly below
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATA_GOV_API_KEY: ${{ secrets.DATA_GOV_API_KEY }}
         run: python pipeline/load_wholesale_data.py
 
       - name: Load retail manual entries
+        if: ${{ !cancelled() }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           RETAIL_SHEET_URL: ${{ secrets.RETAIL_SHEET_URL }}
         run: python ingestion/load_retail_manual.py
 
       - name: Generate retail model
+        if: ${{ !cancelled() }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python ingestion/generate_retail_model.py
 
       - name: Run anomaly detection
+        if: ${{ !cancelled() }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python pipeline/run_anomaly_detection.py
+
+      - name: Keep raw API responses
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-wholesale-${{ github.run_id }}
+          path: pipeline/raw/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Fail the job if wholesale ingestion failed
+        if: ${{ steps.wholesale.outcome == 'failure' }}
+        run: |
+          echo "::error::Wholesale ingestion failed - dashboard data is STALE. See the 'Ingest wholesale prices' step log."
+          exit 1
