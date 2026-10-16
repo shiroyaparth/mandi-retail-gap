@@ -162,6 +162,7 @@ def fresh_db():
     cur.execute((ROOT / "migrations" / "001_constraints.sql").read_text())
     cur.execute((ROOT / "migrations" / "002_multisource.sql").read_text())
     cur.execute((ROOT / "migrations" / "003_retail_official.sql").read_text())
+    cur.execute((ROOT / "migrations" / "004_anomaly_engine.sql").read_text())
     crops = ["Onion", "Potato", "Tomato", "Garlic", "Green Chilli"]
     for name in crops:
         cur.execute("INSERT INTO crop_master (crop_name) VALUES (%s)", (name,))
