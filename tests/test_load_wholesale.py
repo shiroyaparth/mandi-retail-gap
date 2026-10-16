@@ -213,6 +213,7 @@ def db():
     cur.execute((ROOT / "tests" / "schema.sql").read_text())
     cur.execute((ROOT / "migrations" / "001_constraints.sql").read_text())
     cur.execute((ROOT / "migrations" / "002_multisource.sql").read_text())
+    cur.execute((ROOT / "migrations" / "003_retail_official.sql").read_text())
     for name in lw.CROPS:
         cur.execute("INSERT INTO crop_master (crop_name) VALUES (%s)", (name,))
         cur.execute("INSERT INTO crop_alias_map (raw_string, crop_id) "
