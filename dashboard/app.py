@@ -428,7 +428,7 @@ def get_district_wedge(crops, start_date, end_date):
 @st.cache_data(ttl=600, show_spinner=False)
 def get_anomalies(crops, start_date, end_date, include_modeled=True):
     flag_filter = "WHERE a.anomaly_flag = true" if not include_modeled else "WHERE (a.anomaly_flag = true OR a.retail_data_type = 'modeled')"
-    return run_query(
+    df = run_query(
         f"""
         SELECT
             c.crop_name AS "Crop",
@@ -440,7 +440,7 @@ def get_anomalies(crops, start_date, end_date, include_modeled=True):
             a.wholesale_zscore AS "Wholesale Z-Score",
             a.retail_price AS "Retail Price",
             a.retail_zscore AS "Retail Z-Score",
-            a.wedge_pct AS "Retail Premium %",
+            a.wedge_pct AS "Retail Premium Pct",
             a.confidence_level AS "Confidence",
             a.retail_data_type AS "Retail Type",
             COALESCE(a.anomaly_reason, 'Normal') AS "Plain English Explanation",
@@ -454,6 +454,10 @@ def get_anomalies(crops, start_date, end_date, include_modeled=True):
         """,
         {"crops": crops, "start": start_date, "end": end_date},
     )
+    if not df.empty and "Retail Premium Pct" in df.columns:
+        df = df.rename(columns={"Retail Premium Pct": "Retail Premium %"})
+    return df
+
 
 
 # ---------------------------------------------------------------------
