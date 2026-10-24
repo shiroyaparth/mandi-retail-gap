@@ -142,7 +142,7 @@ def empty_query_crops(crops):
 def get_date_bounds():
     result = run_query(
         "SELECT MIN(price_date) AS min_date, MAX(price_date) AS max_date "
-        "FROM wholesale_price WHERE is_provisional = false"
+        "FROM wholesale_price"
     )
 
     today = date.today()
@@ -261,8 +261,7 @@ def get_overview_metrics(crops, start_date, end_date):
         SELECT COUNT(*) AS n
         FROM wholesale_price w
         JOIN crop_master c ON c.crop_id = w.crop_id
-        WHERE w.is_provisional = false
-          AND c.crop_name IN %(crops)s
+        WHERE c.crop_name IN %(crops)s
           AND w.price_date BETWEEN %(start)s AND %(end)s
         """,
         {"crops": crops, "start": start_date, "end": end_date},
@@ -292,7 +291,6 @@ def get_overview_metrics(crops, start_date, end_date):
         """
         SELECT (MAX(price_date) - MIN(price_date)) + 1 AS n
         FROM wholesale_price
-        WHERE is_provisional = false
         """
     )
 
@@ -321,8 +319,7 @@ def get_crop_summary(crops, start_date, end_date):
             AVG(w.modal_price) AS "Avg Price"
         FROM wholesale_price w
         JOIN crop_master c ON c.crop_id = w.crop_id
-        WHERE w.is_provisional = false
-          AND c.crop_name IN %(crops)s
+        WHERE c.crop_name IN %(crops)s
           AND w.price_date BETWEEN %(start)s AND %(end)s
         GROUP BY c.crop_name
         ORDER BY c.crop_name
@@ -340,8 +337,7 @@ def get_trend(crops, city, start_date, end_date):
                AVG(w.modal_price) AS wholesale_price
         FROM wholesale_price w
         JOIN crop_master c ON c.crop_id = w.crop_id
-        WHERE w.is_provisional = false
-          AND c.crop_name IN %(crops)s
+        WHERE c.crop_name IN %(crops)s
           AND w.price_date BETWEEN %(start)s AND %(end)s
         GROUP BY c.crop_name, w.price_date
         ORDER BY w.price_date
@@ -491,7 +487,7 @@ selected_city = st.sidebar.selectbox(
 )
 
 min_date, max_date = get_date_bounds()
-default_start = max(min_date, max_date - timedelta(days=30))
+default_start = min_date
 
 selected_dates = st.sidebar.slider(
     "Date range",
@@ -586,101 +582,224 @@ with tab_overview:
 # ---------------------------------------------------------------------
 
 with tab_trends:
-    st.subheader("Wholesale vs Retail Price Trends & 7-Day Baseline Forecast")
+    st.subheader("📈 Wholesale & Retail Price Trends")
+
+    chart_mode = st.radio(
+        "Chart View",
+        [
+            "🌾 All 5 Crops Wholesale Comparison",
+            "⚖️ Wholesale vs Retail with 7-Day Forecast",
+        ],
+        horizontal=True,
+    )
 
     wholesale, retail = get_trend(
         query_crops, selected_city, start_date, end_date
     )
 
-    show_forecast = st.checkbox("📈 Show 7-Day Moving Average Forecast & Uncertainty Band", value=True)
-
     if wholesale.empty and retail.empty:
         st.info("No price history is available for the selected filters.")
     else:
-        fig = go.Figure()
-
-        for crop in selected_crops:
-            w = wholesale[wholesale["crop"] == crop].sort_values("price_date")
-            r = retail[retail["crop"] == crop].sort_values("price_date")
-
-            if not w.empty:
-                w["price_date"] = pd.to_datetime(w["price_date"])
-                fig.add_trace(
-                    go.Scatter(
-                        x=w["price_date"],
-                        y=w["wholesale_price"],
-                        mode="lines+markers",
-                        name=f"{crop} — Mandi Wholesale",
+        # Show 5-Crop Latest Price & Shift Metrics
+        st.markdown("##### 📌 Latest Mandi Wholesale Prices & Shifts")
+        metric_cols = st.columns(len(selected_crops) if selected_crops else 1)
+        for idx, crop in enumerate(selected_crops):
+            sub = wholesale[wholesale["crop"] == crop].sort_values("price_date")
+            with metric_cols[idx % len(metric_cols)]:
+                if not sub.empty:
+                    latest = sub.iloc[-1]
+                    l_price = float(latest["wholesale_price"])
+                    delta_str = None
+                    if len(sub) >= 2:
+                        prev = sub.iloc[-2]
+                        p_price = float(prev["wholesale_price"])
+                        delta = l_price - p_price
+                        pct = (delta / p_price) * 100
+                        delta_str = f"{delta:+.2f} ({pct:+.1f}%)"
+                    st.metric(
+                        label=crop,
+                        value=f"₹{l_price:.2f}/kg",
+                        delta=delta_str,
+                        help=f"Latest date: {latest['price_date']}",
                     )
-                )
+                else:
+                    st.metric(label=crop, value="No Data")
 
-                if show_forecast and len(w) >= 7:
-                    # 7-day rolling moving average
-                    w["ma7"] = w["wholesale_price"].rolling(window=7, min_periods=3).mean()
-                    std7 = w["wholesale_price"].rolling(window=7, min_periods=3).std().fillna(1.0)
+        st.markdown("---")
 
-                    # Simple seasonal-naive projection for next 7 days
-                    last_date = w["price_date"].max()
-                    last_ma = w["ma7"].iloc[-1]
-                    last_std = std7.iloc[-1]
+        CROP_COLORS = {
+            "Garlic": "#6c5ce7",
+            "Green Chilli": "#00b894",
+            "Onion": "#e17055",
+            "Potato": "#d4ac0d",
+            "Tomato": "#d63031",
+        }
 
-                    future_dates = [last_date + timedelta(days=i) for i in range(1, 8)]
-                    future_vals = [last_ma] * 7
-                    future_upper = [last_ma + 1.96 * last_std] * 7
-                    future_lower = [max(1.0, last_ma - 1.96 * last_std)] * 7
+        gap_start = date(2026, 9, 25)
+        gap_end = date(2026, 10, 24)
+        has_gap = start_date <= gap_start and end_date >= gap_end
 
-                    # Forecast line
+        if chart_mode == "🌾 All 5 Crops Wholesale Comparison":
+            fig = go.Figure()
+            for crop in selected_crops:
+                w = wholesale[wholesale["crop"] == crop].sort_values("price_date")
+                if not w.empty:
+                    w["price_date"] = pd.to_datetime(w["price_date"])
                     fig.add_trace(
                         go.Scatter(
-                            x=future_dates,
-                            y=future_vals,
-                            mode="lines",
-                            name=f"{crop} — 7d Forecast MA",
-                            line={"dash": "dot", "width": 2},
+                            x=w["price_date"],
+                            y=w["wholesale_price"],
+                            mode="lines+markers",
+                            name=crop,
+                            line=dict(color=CROP_COLORS.get(crop), width=2.5),
+                            marker=dict(size=6),
+                            hovertemplate=f"<b>{crop}</b><br>Date: %{{x|%d %b %Y}}<br>Wholesale: ₹%{{y:.2f}}/kg<extra></extra>",
                         )
                     )
 
-                    # Uncertainty band
+            if has_gap:
+                fig.add_vrect(
+                    x0="2026-09-25",
+                    x1="2026-10-24",
+                    fillcolor="rgba(180, 180, 180, 0.16)",
+                    layer="below",
+                    line_width=1,
+                    line_dash="dot",
+                    annotation_text="1-Month Collection Gap (26 Sep – 23 Oct)",
+                    annotation_position="top left",
+                )
+
+            fig.update_layout(
+                title="Mandi Wholesale Price Comparison across Crops (₹/kg)",
+                xaxis_title="Date",
+                yaxis_title="Modal Price (₹/kg)",
+                hovermode="x unified",
+                height=520,
+                margin={"l": 0, "r": 0, "t": 40, "b": 0},
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        else:
+            show_forecast = st.checkbox(
+                "📈 Show 7-Day Moving Average Forecast & Uncertainty Band",
+                value=True,
+            )
+            fig = go.Figure()
+
+            for crop in selected_crops:
+                w = wholesale[wholesale["crop"] == crop].sort_values("price_date")
+                r = retail[retail["crop"] == crop].sort_values("price_date")
+                color = CROP_COLORS.get(crop, "#3498db")
+
+                if not w.empty:
+                    w["price_date"] = pd.to_datetime(w["price_date"])
                     fig.add_trace(
                         go.Scatter(
-                            x=future_dates + future_dates[::-1],
-                            y=future_upper + future_lower[::-1],
-                            fill="toself",
-                            fillcolor="rgba(128, 128, 128, 0.15)",
-                            line=dict(color="rgba(255,255,255,0)"),
-                            name=f"{crop} — 95% Confidence Band",
-                            showlegend=False,
+                            x=w["price_date"],
+                            y=w["wholesale_price"],
+                            mode="lines+markers",
+                            name=f"{crop} — Mandi Wholesale",
+                            line=dict(color=color, width=2.5),
+                            marker=dict(size=5),
                         )
                     )
 
-            if not r.empty:
-                r["price_date"] = pd.to_datetime(r["price_date"])
-                fig.add_trace(
-                    go.Scatter(
-                        x=r["price_date"],
-                        y=r["retail_price"],
-                        mode="lines+markers",
-                        name=f"{crop} — Retail",
-                        line={"dash": "dash"},
+                    if show_forecast and len(w) >= 7:
+                        w["ma7"] = w["wholesale_price"].rolling(window=7, min_periods=3).mean()
+                        std7 = w["wholesale_price"].rolling(window=7, min_periods=3).std().fillna(1.0)
+
+                        last_date = w["price_date"].max()
+                        last_ma = w["ma7"].iloc[-1]
+                        last_std = std7.iloc[-1]
+
+                        future_dates = [last_date + timedelta(days=i) for i in range(1, 8)]
+                        future_vals = [last_ma] * 7
+                        future_upper = [last_ma + 1.96 * last_std] * 7
+                        future_lower = [max(1.0, last_ma - 1.96 * last_std)] * 7
+
+                        fig.add_trace(
+                            go.Scatter(
+                                x=future_dates,
+                                y=future_vals,
+                                mode="lines",
+                                name=f"{crop} — 7d Forecast MA",
+                                line=dict(dash="dot", width=2, color=color),
+                            )
+                        )
+                        fig.add_trace(
+                            go.Scatter(
+                                x=future_dates + future_dates[::-1],
+                                y=future_upper + future_lower[::-1],
+                                fill="toself",
+                                fillcolor="rgba(128, 128, 128, 0.15)",
+                                line=dict(color="rgba(255,255,255,0)"),
+                                name=f"{crop} — 95% Confidence Band",
+                                showlegend=False,
+                            )
+                        )
+
+                if not r.empty:
+                    r["price_date"] = pd.to_datetime(r["price_date"])
+                    fig.add_trace(
+                        go.Scatter(
+                            x=r["price_date"],
+                            y=r["retail_price"],
+                            mode="lines+markers",
+                            name=f"{crop} — Retail",
+                            line=dict(dash="dash", color=color, width=1.5),
+                        )
                     )
+
+            if has_gap:
+                fig.add_vrect(
+                    x0="2026-09-25",
+                    x1="2026-10-24",
+                    fillcolor="rgba(180, 180, 180, 0.16)",
+                    layer="below",
+                    line_width=1,
+                    line_dash="dot",
+                    annotation_text="Collection Gap",
+                    annotation_position="top left",
                 )
 
-        fig.update_layout(
-            xaxis_title="Date",
-            yaxis_title="Price (₹/kg)",
-            hovermode="x unified",
-            height=520,
-            margin={"l": 0, "r": 0, "t": 20, "b": 0},
-            legend_title_text="",
-        )
-        st.plotly_chart(fig, use_container_width=True)
+            fig.update_layout(
+                xaxis_title="Date",
+                yaxis_title="Price (₹/kg)",
+                hovermode="x unified",
+                height=520,
+                margin={"l": 0, "r": 0, "t": 20, "b": 0},
+                legend_title_text="",
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
-        st.info(
-            "💡 **Honest Forecast Uncertainty Note**: The projection uses a 7-day seasonal-naive moving average. "
-            "Agricultural commodities are vulnerable to weather disruptions, transport strikes, and arrival shifts. "
-            "Treat confidence bands as directional guides, not certainties."
-        )
+            st.info(
+                "💡 **Honest Forecast Uncertainty Note**: The projection uses a 7-day seasonal-naive moving average. "
+                "Agricultural commodities are vulnerable to weather disruptions, transport strikes, and arrival shifts. "
+                "Treat confidence bands as directional guides, not certainties."
+            )
+
+        with st.expander("ℹ️ Why is there a 1-month gap (26 Sep – 23 Oct) and how to backfill it?"):
+            st.markdown(
+                """
+                **Why the gap exists:**  
+                Automated API ingestions were paused between 26 Sep and 23 Oct. Continuous daily mandi data was collected up to 25 Sep, and resumed today on 24 Oct.
+
+                **How to backfill the missing dates:**
+                1. Visit [agmarknet.gov.in](https://agmarknet.gov.in) -> **Custom Query / Date-wise Prices and Arrivals**.
+                2. Select State: **Gujarat**, Commodity: **All** (or Onion/Potato/Tomato/Garlic/Chilli), Date range: **26-09-2026 to 23-10-2026**.
+                3. Export report as **CSV** or **Excel** (`.xlsx`).
+                4. Drop the downloaded file into the `data_inbox/` folder in this repo.
+                5. Run in PowerShell:
+                   ```powershell
+                   python pipeline/run_ingestion.py
+                   python pipeline/run_anomaly_detection.py
+                   ```
+                The multi-source importer will automatically read, auto-map columns, convert quintals to ₹/kg, and backfill the entire month without creating duplicates!
+                """
+            )
         st.caption("Wholesale source: **agmarknet.gov.in**. Retail source: quick-commerce & DCA.")
+
 
 
 # ---------------------------------------------------------------------
