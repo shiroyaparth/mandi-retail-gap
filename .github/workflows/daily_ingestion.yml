@@ -39,7 +39,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATA_GOV_API_KEY: ${{ secrets.DATA_GOV_API_KEY }}
-        run: python pipeline/load_wholesale_data.py
+        run: python pipeline/run_ingestion.py
 
       - name: Load retail manual entries
         if: ${{ !cancelled() }}
@@ -59,6 +59,14 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python pipeline/run_anomaly_detection.py
+
+      - name: Send anomaly alerts
+        if: ${{ !cancelled() }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python pipeline/alerts.py
 
       - name: Keep raw API responses
         if: ${{ !cancelled() }}

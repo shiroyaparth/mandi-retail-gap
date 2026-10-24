@@ -1,0 +1,46 @@
+name: Weekly Market Insight Digest
+
+on:
+  schedule:
+    - cron: "0 19 * * 0"   # Every Sunday 19:00 UTC = Monday 00:30 IST
+  workflow_dispatch:      # Manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate weekly digest
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python pipeline/generate_weekly_digest.py
+
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-market-digest-${{ github.run_id }}
+          path: docs/digests/
+          retention-days: 30
+
+      - name: Commit latest digest to docs/
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/latest_digest.md docs/digests/
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore: automated weekly market digest [skip ci]"
+          git push || echo "Push skipped: no changes or insufficient branch permissions."
