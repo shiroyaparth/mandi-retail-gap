@@ -1,0 +1,12 @@
+[Unit]
+Description=Trigger KrishiPulse daily price ingestion at 09:00 AM IST and 14:30 PM IST
+
+[Timer]
+# 09:00 AM IST (03:30 UTC)
+OnCalendar=*-*-* 03:30:00 UTC
+# 14:30 PM IST (09:00 UTC)
+OnCalendar=*-*-* 09:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

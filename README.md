@@ -163,18 +163,30 @@ When government APIs are down or geo-blocked on GitHub Actions, update KrishiPul
 
 ---
 
-## ⚙️ Automation Options (100% Free)
+## ⚙️ Automation Options (100% Free & Zero Laptop Dependency)
 
-### Option A: GitHub Actions (Twice-Daily Cloud Automation)
+### Option A: 24/7 Zero-Laptop Cloud Automation (Oracle Cloud Always Free - Recommended ⭐)
+Because Indian government portals (`api.data.gov.in` and `agmarknet.gov.in`) block foreign cloud IPs (Azure/AWS US/EU), run with an authentic Indian IP on Oracle Cloud Always Free in **Mumbai** or **Hyderabad**:
+- **Cost**: **$0.00 / month forever**.
+- **Setup Time**: 5 minutes using our automated script:
+  ```bash
+  git clone https://github.com/<your_username>/mandi-retail-gap.git ~/krishipulse
+  cd ~/krishipulse && ./deploy/setup_oracle_free_tier.sh
+  ```
+- **How it works**: Registers your free VM as a GitHub Actions Self-Hosted Runner (`[self-hosted, linux, india]`). GitHub Actions schedules, manages, and logs daily runs at **09:00 AM IST**, while execution physically occurs in Mumbai without your laptop!
+- See the full guide in [docs/cloud_automation_guide.md](docs/cloud_automation_guide.md).
+
+### Option B: GitHub Actions Hosted (`ubuntu-latest` with India Proxy)
 Included in `.github/workflows/daily_ingestion.yml`:
 - **Schedule**: Twice daily at `03:30 UTC` (09:00 IST) and `09:00 UTC` (14:30 IST).
-- **Graceful Fallback**: If wholesale API connection is refused on foreign runners, the job fails with a clear red status, but downstream retail and model steps continue.
-- **Weekly Digest**: Runs every Sunday night via `.github/workflows/weekly_digest.yml` and commits `docs/latest_digest.md`.
+- **Proxy Support**: Set `INDIA_PROXY_URL` in GitHub Secrets to route requests through an Indian proxy.
+- **Graceful Fallback & Instant Alerts**: If wholesale API connection is refused or throws HTTP 502, it sends an immediate Telegram / Email alert, preserves historical data, and completes retail and anomaly analysis.
+- **Weekly Digest**: Runs every Sunday night via `.github/workflows/weekly_digest.yml` and commits `docs/digests/`.
 
-### Option B: Windows Task Scheduler (Workstation in India)
-Because foreign runner IPs are often blocked by Indian government servers, scheduling from an Indian PC guarantees seamless connectivity:
+### Option C: Windows Task Scheduler (Workstation in India)
+If using your local Windows PC, run with `-StartWhenAvailable` so tasks run immediately whenever your laptop opens:
 ```powershell
-# Schedule morning ingestion at 09:30 AM IST
+# Schedule morning ingestion at 09:30 AM IST (runs on wake/unlock if laptop was closed)
 schtasks /create /tn "KrishiPulse_Daily_Ingest" `
     /tr "powershell.exe -ExecutionPolicy Bypass -File \"D:\project\krishipulse\mandi-retail-gap\tools\run_daily_windows.ps1\"" `
     /sc daily /st 09:30 /f

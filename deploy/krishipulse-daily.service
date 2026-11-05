@@ -1,0 +1,21 @@
+[Unit]
+Description=KrishiPulse Daily Agri-Price Ingestion and Anomaly Pipeline
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/krishipulse
+EnvironmentFile=-/home/ubuntu/krishipulse/.env
+ExecStart=/home/ubuntu/krishipulse/.venv/bin/python /home/ubuntu/krishipulse/pipeline/run_ingestion.py
+ExecStartPost=/home/ubuntu/krishipulse/.venv/bin/python /home/ubuntu/krishipulse/ingestion/load_retail_manual.py
+ExecStartPost=/home/ubuntu/krishipulse/.venv/bin/python /home/ubuntu/krishipulse/ingestion/generate_retail_model.py
+ExecStartPost=/home/ubuntu/krishipulse/.venv/bin/python /home/ubuntu/krishipulse/pipeline/run_anomaly_detection.py
+ExecStartPost=/home/ubuntu/krishipulse/.venv/bin/python /home/ubuntu/krishipulse/pipeline/alerts.py
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

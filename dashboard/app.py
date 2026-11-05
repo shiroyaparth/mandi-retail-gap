@@ -464,15 +464,15 @@ st.sidebar.title("🌾 KrishiPulse")
 st.sidebar.caption("Gujarat wholesale-to-retail price anomaly radar")
 
 available_crops = load_crops()
-if available_crops.empty:
+if available_crops.empty or "crop_name" not in available_crops.columns:
     st.error("crop_master is empty. Run your master-data pipeline first.")
-    st.stop()
-
-crop_options = [
-    crop for crop in CROPS if crop in available_crops["crop_name"].tolist()
-]
-if not crop_options:
-    crop_options = available_crops["crop_name"].tolist()
+    crop_options = list(CROPS)
+else:
+    crop_options = [
+        crop for crop in CROPS if crop in available_crops["crop_name"].tolist()
+    ]
+    if not crop_options:
+        crop_options = available_crops["crop_name"].tolist()
 
 selected_crops = st.sidebar.multiselect(
     "Crops",

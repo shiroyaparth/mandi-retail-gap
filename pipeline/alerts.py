@@ -97,6 +97,32 @@ def format_telegram_alert(anomalies: List[Dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def send_pipeline_failure_alert(source: str, error_msg: str, dry_run: bool = False) -> bool:
+    """Dispatches immediate notification when an automated ingestion source encounters an error."""
+    now_str = datetime.now().strftime('%d %b %Y %H:%M')
+    message = (
+        "⚠️ <b>KrishiPulse Pipeline Warning: Wholesale Ingestion</b>\n\n"
+        f"📅 Timestamp: {now_str}\n"
+        f"📡 Source: <code>{source}</code>\n"
+        f"❌ Status: <b>Degraded / Failed</b>\n"
+        f"🔍 Error: <code>{error_msg[:300]}</code>\n\n"
+        "🛡️ <i>Safety rule applied: Historical data preserved. Downstream retail & anomaly analysis continued.</i>\n"
+        "💡 <i>Action: Check api.data.gov.in status or drop an Agmarknet report into data_inbox/.</i>"
+    )
+    if dry_run:
+        print("\n=== DRY RUN FAILURE ALERT PREVIEW ===")
+        try:
+            print(message)
+        except UnicodeEncodeError:
+            print(message.encode("ascii", errors="replace").decode("ascii"))
+        print("=====================================\n")
+        return True
+
+    tg = send_telegram(message)
+    em = send_email("⚠️ KrishiPulse Wholesale Ingestion Degraded", f"<pre>{message}</pre>")
+    return tg or em
+
+
 def send_telegram(message: str, bot_token: Optional[str] = None, chat_id: Optional[str] = None) -> bool:
     token = bot_token or os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     target = chat_id or os.getenv("TELEGRAM_CHAT_ID", "").strip()
@@ -176,7 +202,10 @@ def run_alerts(db_url: Optional[str] = None, dry_run: bool = False, days_back: i
 
     if dry_run:
         print("\n=== DRY RUN ALERT PREVIEW ===")
-        print(message)
+        try:
+            print(message)
+        except UnicodeEncodeError:
+            print(message.encode("ascii", errors="replace").decode("ascii"))
         print("=============================\n")
         return 0
 
@@ -190,9 +219,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Send price anomaly alerts via Telegram / Email.")
     parser.add_argument("--dry-run", action="store_true", help="Print formatted alert to stdout without sending")
     parser.add_argument("--days", type=int, default=1, help="Lookback window in days (default: 1)")
+    parser.add_argument("--notify-failure", type=str, default=None, help="Send pipeline failure notification with error message")
+    parser.add_argument("--source", type=str, default="wholesale", help="Source name for failure notification")
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
+    if args.notify_failure:
+        send_pipeline_failure_alert(source=args.source, error_msg=args.notify_failure, dry_run=args.dry_run)
+        return 0
+
     return run_alerts(dry_run=args.dry_run, days_back=args.days)
 
 

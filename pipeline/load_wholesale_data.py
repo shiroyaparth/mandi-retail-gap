@@ -38,11 +38,11 @@ RAW_DIR = os.getenv("RAW_DIR", "pipeline/raw")
 
 PAGE_LIMIT = 100
 MAX_PAGES = 200            # hard stop against infinite pagination
-CONNECT_TIMEOUT = 10
-READ_TIMEOUT = 30
-MAX_ATTEMPTS = 4
+CONNECT_TIMEOUT = int(os.getenv("CONNECT_TIMEOUT", "15"))
+READ_TIMEOUT = int(os.getenv("READ_TIMEOUT", "45"))
+MAX_ATTEMPTS = int(os.getenv("MAX_ATTEMPTS", "4"))
 RETRY_STATUS = {429, 500, 502, 503, 504}
-HEADERS = {"User-Agent": "Mozilla/5.0 (KrishiPulse ingestion)"}
+HEADERS = {"User-Agent": "Mozilla/5.0 (KrishiPulse automated ingestion; Gujarat)"}
 
 # Rs/kg plausibility bounds per crop (unchanged from the original script).
 CROP_PRICE_BOUNDS = {
@@ -100,6 +100,9 @@ def _get_page(session, url, params, api_key, crop, sleep):
 def fetch_all_records(crop, api_key, session=None, sleep=time.sleep):
     """Return every record for `crop` in Gujarat. Raises FetchError on any failure."""
     session = session or requests.Session()
+    proxy = os.getenv("INDIA_PROXY_URL") or os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+    if proxy and not session.proxies:
+        session.proxies = {"http": proxy, "https": proxy}
     url = f"{API_BASE.rstrip('/')}/{RESOURCE_ID}"
     records, offset, total = [], 0, None
     for _page in range(MAX_PAGES):

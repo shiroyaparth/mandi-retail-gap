@@ -55,6 +55,23 @@ def test_match_columns_agmarknet_standard():
     assert matched["modal_price"] == "Modal Price (Rs./Quintal)"
 
 
+def test_match_columns_dynamic_date_headers():
+    cols = [
+        "State/UT", "Commodity Group", "Commodity", "Date", "MSP",
+        "Arrival Quantity 26-09-2026 to 22-10-2026", "Arrival Unit",
+        "Min Price 26-09-2026 to 22-10-2026", "Modal Price 26-09-2026 to 22-10-2026",
+        "Max Price 26-09-2026 to 22-10-2026", "Price Unit"
+    ]
+    matched = match_columns(cols)
+    assert matched["state"] == "State/UT"
+    assert matched["commodity"] == "Commodity"
+    assert matched["arrival_date"] == "Date"
+    assert matched["modal_price"] == "Modal Price 26-09-2026 to 22-10-2026"
+    assert matched["min_price"] == "Min Price 26-09-2026 to 22-10-2026"
+    assert matched["max_price"] == "Max Price 26-09-2026 to 22-10-2026"
+    assert matched["unit"] == "Price Unit"
+
+
 def test_match_columns_lowercase():
     cols = ["state_name", "district_name", "market_name", "cmdt_name", "variety_name",
             "grade_name", "price_date", "min_price", "max_price", "modal_price", "unit_name_price"]

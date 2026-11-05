@@ -49,7 +49,7 @@ CROP_CANONICAL_MAP = {
 }
 
 COLUMN_SYNONYMS = {
-    "state": ["state", "state_name", "state name"],
+    "state": ["state", "state_name", "state name", "state/ut", "state / ut"],
     "district": ["district", "district_name", "district name"],
     "market": ["market", "market_name", "market name", "mandi", "mandi_name", "apmc", "center", "centre"],
     "commodity": ["commodity", "cmdt_name", "cmdt", "crop", "crop_name", "commodity_name", "commodity name"],
@@ -63,7 +63,7 @@ COLUMN_SYNONYMS = {
     "modal_price": ["modal_price", "modal price", "modal", "model_price", "model price",
                     "modal price (rs./quintal)", "modal price(rs./quintal)", "modal_price_rs_quintal",
                     "modal price (rs/quintal)", "modal price (rs/kg)", "modal price (rs./kg)"],
-    "unit": ["unit", "unit_name_price", "unit of price", "price_unit", "unit name"],
+    "unit": ["unit", "unit_name_price", "unit of price", "price_unit", "unit name", "price unit"],
 }
 
 
@@ -78,12 +78,31 @@ def match_columns(columns: List[str]) -> Dict[str, str]:
     """Map canonical field name -> actual column name in the file."""
     mapping = {}
     col_lookup = {clean_col_name(c): c for c in columns}
+    # 1. Exact synonym matching
     for field_name, synonyms in COLUMN_SYNONYMS.items():
         for syn in synonyms:
             clean_syn = clean_col_name(syn)
             if clean_syn in col_lookup:
                 mapping[field_name] = col_lookup[clean_syn]
                 break
+
+    # 2. Prefix and containment matching for dynamic columns (e.g. "Modal Price 26-09-2026 to 22-10-2026")
+    for field_name in ["modal_price", "min_price", "max_price", "unit", "arrival_date", "commodity", "market", "district", "state"]:
+        if field_name not in mapping:
+            for syn in COLUMN_SYNONYMS.get(field_name, []):
+                clean_syn = clean_col_name(syn)
+                if len(clean_syn) < 4:
+                    continue
+                for clean_col, orig_col in col_lookup.items():
+                    if clean_col.startswith(clean_syn) or clean_syn in clean_col:
+                        # Avoid mapping 'commodity group' to 'commodity'
+                        if field_name == "commodity" and "group" in clean_col:
+                            continue
+                        mapping[field_name] = orig_col
+                        break
+                if field_name in mapping:
+                    break
+
     return mapping
 
 
@@ -193,7 +212,7 @@ class CsvImportAdapter(BaseSourceAdapter):
 
     def parse_dataframe(self, df: pd.DataFrame, source_file_name: str) -> Tuple[List[NormalizedWholesaleRecord], Dict[str, int]]:
         col_map = match_columns(list(df.columns))
-        required = ["market", "commodity", "modal_price", "arrival_date"]
+        required = ["commodity", "modal_price", "arrival_date"]
         missing = [r for r in required if r not in col_map]
         if missing:
             raise ValueError(f"File {source_file_name} missing essential columns: {missing}. Found: {list(df.columns)}")
@@ -218,12 +237,14 @@ class CsvImportAdapter(BaseSourceAdapter):
                 stats["rejected"] += 1
                 continue
 
-            # Market & District
-            market = str(row.get(col_map["market"], "")).strip()
+            # Market & District (supports APMC mandi level and state aggregate reports)
+            market = str(row.get(col_map.get("market", ""), "")).strip() if "market" in col_map else ""
+            district = str(row.get(col_map.get("district", ""), "")).strip() if "district" in col_map else None
+
             if not market:
-                stats["rejected"] += 1
-                continue
-            district = str(row.get(col_map.get("district", ""), "")).strip() or None
+                st = state_val or "Gujarat"
+                market = f"{st} State Total"
+                district = district or st
 
             # Variety & Grade
             variety = str(row.get(col_map.get("variety", ""), "")).strip() or "Unknown"

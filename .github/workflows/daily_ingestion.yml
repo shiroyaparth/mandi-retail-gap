@@ -1,10 +1,33 @@
-name: Daily Wholesale Price Ingestion
+name: Daily Ingestion & Anomaly Pipeline
 
 on:
   schedule:
-    - cron: "30 3 * * *"   # 03:30 UTC = 09:00 IST
-    - cron: "0 9 * * *"    # 09:00 UTC = 14:30 IST
-  workflow_dispatch:        # Actions tab -> "Run workflow" for a manual run
+    - cron: "30 3 * * *"   # 03:30 UTC = 09:00 AM IST (Morning mandi arrivals)
+    - cron: "0 9 * * *"    # 09:00 UTC = 14:30 PM IST (Afternoon market updates)
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Wholesale data source to execute"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - datagov
+          - csv_import
+      dry_run:
+        description: "Run validation without writing to database"
+        required: false
+        default: false
+        type: boolean
+      runner:
+        description: "Target runner environment"
+        required: false
+        default: "self-hosted"
+        type: choice
+        options:
+          - self-hosted
+          - ubuntu-latest
 
 concurrency:
   group: krishipulse-ingestion
@@ -15,13 +38,14 @@ permissions:
 
 jobs:
   ingest:
-    # NOTE: GitHub-hosted runners are outside India. api.data.gov.in has been reported to refuse
-    # non-Indian addresses (see README). If the wholesale step fails with "Connection refused",
-    # either switch the data source or use `runs-on: self-hosted` on a machine in India.
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    name: Execute Daily Data Pipeline
+    # Priority: Self-hosted Indian runner (e.g. Oracle Cloud Always Free in Mumbai/Hyderabad)
+    # Fallback: GitHub-hosted ubuntu-latest (supports INDIA_PROXY_URL secret)
+    runs-on: ${{ github.event.inputs.runner || vars.RUNNER_TYPE || 'ubuntu-latest' }}
+    timeout-minutes: 25
+
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -31,44 +55,70 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Ingest wholesale prices
+      - name: Ingest wholesale prices (Agmarknet / data.gov.in)
         id: wholesale
-        continue-on-error: true      # let the other steps still run; the job is failed explicitly below
+        continue-on-error: true
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATA_GOV_API_KEY: ${{ secrets.DATA_GOV_API_KEY }}
-        run: python pipeline/run_ingestion.py
+          INDIA_PROXY_URL: ${{ secrets.INDIA_PROXY_URL }}
+          HTTPS_PROXY: ${{ secrets.INDIA_PROXY_URL }}
+        run: |
+          DRY_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_FLAG="--dry-run"
+          fi
+          SRC="${{ github.event.inputs.source || 'all' }}"
+          echo "Executing wholesale ingestion for source: $SRC $DRY_FLAG..."
+          python pipeline/run_ingestion.py --source "$SRC" $DRY_FLAG
 
-      - name: Load retail manual entries
+      - name: Notify on wholesale ingestion failure (Telegram / Email)
+        if: ${{ steps.wholesale.outcome == 'failure' && !cancelled() }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          echo "::warning::Wholesale ingestion failed or timed out. Historical data remains protected."
+          python pipeline/alerts.py --notify-failure "Wholesale API connection failed or timed out. Existing data preserved." --source "datagov" || true
+
+      - name: Ingest retail prices from Google Sheet
         if: ${{ !cancelled() }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           RETAIL_SHEET_URL: ${{ secrets.RETAIL_SHEET_URL }}
-        run: python ingestion/load_retail_manual.py
+        run: |
+          DRY_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_FLAG="--dry-run"
+          fi
+          python ingestion/load_retail_manual.py $DRY_FLAG
 
-      - name: Generate retail model
-        if: ${{ !cancelled() }}
+      - name: Generate regional retail model
+        if: ${{ !cancelled() && github.event.inputs.dry_run != 'true' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python ingestion/generate_retail_model.py
 
-      - name: Run anomaly detection
-        if: ${{ !cancelled() }}
+      - name: Run spatial anomaly detection engine
+        if: ${{ !cancelled() && github.event.inputs.dry_run != 'true' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python pipeline/run_anomaly_detection.py
 
-      - name: Send anomaly alerts
-        if: ${{ !cancelled() }}
+      - name: Send price anomaly alerts (Telegram / Email)
+        if: ${{ !cancelled() && github.event.inputs.dry_run != 'true' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python pipeline/alerts.py
 
-      - name: Keep raw API responses
+      - name: Archive raw API responses
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
@@ -77,8 +127,8 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-      - name: Fail the job if wholesale ingestion failed
+      - name: Fail workflow if wholesale ingestion encountered errors
         if: ${{ steps.wholesale.outcome == 'failure' }}
         run: |
-          echo "::error::Wholesale ingestion failed - dashboard data is STALE. See the 'Ingest wholesale prices' step log."
+          echo "::error::Wholesale ingestion failed — dashboard data may be stale until next run or inbox drop."
           exit 1

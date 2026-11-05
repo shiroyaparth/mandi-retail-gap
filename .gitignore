@@ -4,4 +4,15 @@
 !.env.example
 __pycache__/
 *.py[cod]
-.pytest_cache/
+.pytest_cache/
+
+# Data and inbox runtime artifacts
+data_inbox/*
+!data_inbox/.gitkeep
+!data_inbox/processed/
+data_inbox/processed/*
+!data_inbox/processed/.gitkeep
+
+# Raw json & runner logs
+pipeline/raw/*.json
+logs/*.log
