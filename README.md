@@ -165,4 +165,3 @@ For Streamlit Cloud, add `DATABASE_URL` under Settings -> Secrets in TOML format
 ## Disclaimer
 
 Retail prices for cities other than Ahmedabad are model estimates, and retail values before 18 July 2026 are estimates. Wholesale data since 26 September 2026 is imported weekly by hand. All methodology decisions are documented in `METHODOLOGY.md`.
-..........................
